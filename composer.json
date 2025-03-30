@@ -1,0 +1,38 @@
+{
+  "name": "smitmartijn/laravel-schedule-monitor",
+  "description": "Monitor Laravel scheduled jobs with heartbeats",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Smitmartijn\\ScheduleMonitor\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Martijn Smit"
+    }
+  ],
+  "require": {
+    "php": "^8.0",
+    "illuminate/support": "^8.0|^9.0|^10.0",
+    "illuminate/console": "^8.0|^9.0|^10.0",
+    "illuminate/events": "^8.0|^9.0|^10.0",
+    "guzzlehttp/guzzle": "^7.0"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Smitmartijn\\ScheduleMonitor\\ScheduleMonitorServiceProvider"
+      ],
+      "aliases": {
+        "ScheduleMonitor": "Smitmartijn\\ScheduleMonitor\\Facades\\ScheduleMonitor"
+      }
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
