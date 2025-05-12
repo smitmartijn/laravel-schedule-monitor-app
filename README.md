@@ -122,7 +122,7 @@ If this command completes successfully, the connection is working.
 
 ## Security
 
-If you discover any security issues, please email your.email@example.com instead of using the issue tracker.
+If you discover any security issues, please use the issue tracker.
 
 ## License
 

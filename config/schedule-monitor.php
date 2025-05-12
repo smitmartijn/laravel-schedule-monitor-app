@@ -32,6 +32,12 @@ return [
   // Connection timeout in seconds
   'connect_timeout' => env('SCHEDULE_MONITOR_CONNECT_TIMEOUT', 2),
 
+  // Number of retry attempts for failed requests
+  'retry_count' => env('SCHEDULE_MONITOR_RETRY_COUNT', 3),
+
+  // Delay between retry attempts in seconds
+  'retry_delay' => env('SCHEDULE_MONITOR_RETRY_DELAY', 3),
+
   /*
     |--------------------------------------------------------------------------
     | Monitoring Settings
