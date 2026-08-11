@@ -41,6 +41,12 @@ php artisan schedule:monitor:sync
 
 This will scan all your scheduled tasks and send them to the monitoring application. It's recommended to run this command in your deployment process so that any changes to your scheduled tasks are automatically synced.
 
+If you don't want a temporarily unreachable or failing monitoring service to break your deployment, pass `--warn-only`. The command then prints a warning and exits with code 0 instead of failing:
+
+```bash
+php artisan schedule:monitor:sync --warn-only
+```
+
 ### Testing Heartbeats
 
 You can send a test heartbeat for a job to verify the monitoring connection is working properly:

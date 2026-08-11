@@ -15,7 +15,8 @@ class SyncCommand extends Command
    *
    * @var string
    */
-  protected $signature = 'schedule:monitor:sync';
+  protected $signature = 'schedule:monitor:sync
+                            {--warn-only : Warn instead of failing when the monitoring service is unreachable or returns an error}';
 
   /**
    * The console command description.
@@ -83,7 +84,14 @@ class SyncCommand extends Command
       return 0;
     }
 
-    $response = ScheduleMonitor::getClient()->syncJobs(['jobs' => $jobsToSync]);
+    try {
+      $response = ScheduleMonitor::getClient()->syncJobs(['jobs' => $jobsToSync]);
+    } catch (\Throwable $e) {
+      return $this->reportSyncFailure(
+        'Could not reach the monitoring service: ' . $e->getMessage(),
+        $e
+      );
+    }
 
     if ($response->successful()) {
       $syncData = $response->json();
@@ -102,8 +110,33 @@ class SyncCommand extends Command
       return 0;
     }
 
-    $this->error('Failed to sync scheduled tasks');
-    $this->error($response->status() . ': ' . $response->body());
+    return $this->reportSyncFailure(
+      'Failed to sync scheduled tasks: ' . $response->status() . ': ' . $response->body()
+    );
+  }
+
+  /**
+   * Report a sync failure, honouring the --warn-only option.
+   *
+   * @param  string  $message
+   * @param  \Throwable|null  $exception
+   * @return int
+   */
+  protected function reportSyncFailure(string $message, ?\Throwable $exception = null): int
+  {
+    if ($exception !== null && $this->getOutput()->isVerbose()) {
+      $this->line('Stack trace: ' . $exception->getTraceAsString());
+    }
+
+    if ($this->option('warn-only')) {
+      $this->warn($message);
+      $this->warn('Continuing anyway because --warn-only was passed.');
+
+      return 0;
+    }
+
+    $this->error($message);
+
     return 1;
   }
 
