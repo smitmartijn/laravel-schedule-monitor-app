@@ -2,10 +2,8 @@
 
 namespace Smitmartijn\ScheduleMonitor\Http;
 
-use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
 
 class Client
 {
@@ -44,6 +42,10 @@ class Client
    */
   protected $retryDelay;
 
+  protected $timeout;
+
+  protected $connectTimeout;
+
   /**
    * Create a new client instance.
    *
@@ -57,12 +59,8 @@ class Client
     $this->apiToken = $config['api_token'] ?? '';
     $this->retryCount = (int) ($config['retry_count'] ?? 3);
     $this->retryDelay = (int) ($config['retry_delay'] ?? 3);
-
-    // Configure the HTTP client with default options
-    $this->http->withOptions([
-      'timeout' => $config['timeout'] ?? 5,
-      'connect_timeout' => $config['connect_timeout'] ?? 2,
-    ]);
+    $this->timeout = (int) ($config['timeout'] ?? 5);
+    $this->connectTimeout = (int) ($config['connect_timeout'] ?? 2);
   }
 
   /**
@@ -107,6 +105,8 @@ class Client
   protected function post(string $endpoint, array $data): Response
   {
     return $this->http->withToken($this->apiToken)
+      ->timeout($this->timeout)
+      ->connectTimeout($this->connectTimeout)
       ->retry($this->retryCount, $this->retryDelay * 1000, function ($exception, $request) {
         // Retry on connection errors or server errors (5xx)
         return $exception instanceof \Illuminate\Http\Client\ConnectionException ||
@@ -125,6 +125,8 @@ class Client
   protected function get(string $endpoint): Response
   {
     return $this->http->withToken($this->apiToken)
+      ->timeout($this->timeout)
+      ->connectTimeout($this->connectTimeout)
       ->retry($this->retryCount, $this->retryDelay * 1000, function ($exception, $request) {
         // Retry on connection errors or server errors (5xx)
         return $exception instanceof \Illuminate\Http\Client\ConnectionException ||

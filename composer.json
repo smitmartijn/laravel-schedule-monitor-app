@@ -3,7 +3,6 @@
   "description": "Monitor Laravel scheduled jobs with heartbeats",
   "type": "library",
   "license": "MIT",
-  "version": "1.4",
   "autoload": {
     "psr-4": {
       "Smitmartijn\\ScheduleMonitor\\": "src/"
@@ -19,7 +18,7 @@
     "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
     "illuminate/console": "^10.0|^11.0|^12.0|^13.0",
     "illuminate/events": "^10.0|^11.0|^12.0|^13.0",
-    "guzzlehttp/guzzle": "^7.0"
+    "guzzlehttp/guzzle": "^7.15.2|^8.0.1"
   },
   "extra": {
     "laravel": {

@@ -97,11 +97,31 @@ $schedule->command('import:data')
 
 If not specified, the default grace period from the configuration will be used.
 
+### Stable Monitor IDs
+
+The package derives a stable monitor ID for ordinary scheduled commands and jobs. If the same command is scheduled more than once, give each occurrence an explicit ID so their histories remain separate:
+
+```php
+$schedule->command('reports:send --audience=daily')
+    ->daily()
+    ->monitorId('daily-reports');
+
+$schedule->command('reports:send --audience=weekly')
+    ->weekly()
+    ->monitorId('weekly-reports');
+```
+
+Use `monitorId()` for scheduled closures as well when moving the closure between source lines should not create a new monitor identity.
+
+The task's Laravel scheduler timezone is synchronized automatically.
+
 ## How It Works
 
 1. When you run the `schedule:monitor:sync` command, all eligible scheduled tasks are sent to the monitoring application.
 2. When a task finishes running, the package automatically sends a heartbeat to the monitoring application.
 3. The monitoring application checks if tasks are running on schedule and raises alerts when they miss their expected run time.
+
+Each execution carries a run UUID, so HTTP or queue retries do not create duplicate heartbeat records. Failed executions are reported immediately and remain failed until a subsequent successful execution.
 
 ## Monitoring Multiple Applications
 
@@ -115,6 +135,9 @@ Make sure:
 1. The Laravel application can reach the monitoring API URL
 2. The API tokens match on both sides
 3. The scheduled task isn't excluded by the ignore patterns in the config
+4. A queue worker is processing the configured heartbeat queue when `SCHEDULE_MONITOR_USE_QUEUE=true`
+
+Queued heartbeat delivery failures fail and retry the small transport job; they never fail the original scheduled task. Monitor the queue's failed jobs so invalid credentials or an unreachable dashboard cannot go unnoticed. Set `SCHEDULE_MONITOR_USE_QUEUE=false` if the monitored application does not run a queue worker.
 
 ### Check Connectivity
 

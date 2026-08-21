@@ -20,6 +20,10 @@ class SendHeartbeatJob implements ShouldQueue
    */
   protected $jobName;
 
+  protected $monitorId;
+
+  protected $runId;
+
   /**
    * The status of the job execution.
    *
@@ -42,9 +46,17 @@ class SendHeartbeatJob implements ShouldQueue
    * @param float|null $runtime
    * @return void
    */
-  public function __construct(string $jobName, string $status = 'success', ?float $runtime = null)
+  public function __construct(
+    string $jobName,
+    string $monitorId,
+    string $runId,
+    string $status = 'success',
+    ?float $runtime = null
+  )
   {
     $this->jobName = $jobName;
+    $this->monitorId = $monitorId;
+    $this->runId = $runId;
     $this->status = $status;
     $this->runtime = $runtime;
   }
@@ -56,16 +68,13 @@ class SendHeartbeatJob implements ShouldQueue
    */
   public function handle()
   {
-    try {
-      $client = app('schedule-monitor.http-client');
-      $client->sendHeartbeat([
-        'job' => $this->jobName,
-        'status' => $this->status,
-        'runtime' => $this->runtime,
-      ]);
-    } catch (\Exception $e) {
-      // Log the error but don't fail the job
-      report($e);
-    }
+    $client = app('schedule-monitor.http-client');
+    $client->sendHeartbeat([
+      'job' => $this->jobName,
+      'monitorId' => $this->monitorId,
+      'runId' => $this->runId,
+      'status' => $this->status,
+      'runtime' => $this->runtime,
+    ])->throw();
   }
 }

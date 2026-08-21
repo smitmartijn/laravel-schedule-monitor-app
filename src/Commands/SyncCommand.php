@@ -63,9 +63,11 @@ class SyncCommand extends Command
         }
 
         $jobsToSync[] = [
+          'id' => ScheduleMonitorHelper::getEventMonitorId($event),
           'name' => $name,
           'description' => $description,
           'schedule' => $this->getEventExpression($event),
+          'timezone' => ScheduleMonitorHelper::getEventTimezone($event),
           'graceMinutes' => ScheduleMonitor::getGracePeriod($event),
           'isMonitored' => true,
         ];

@@ -7,6 +7,7 @@ use Smitmartijn\ScheduleMonitor\Http\Client;
 use Smitmartijn\ScheduleMonitor\Jobs\SendHeartbeatJob;
 use Smitmartijn\ScheduleMonitor\Helpers\ScheduleMonitorHelper;
 use ReflectionClass;
+use Illuminate\Support\Str;
 
 class ScheduleMonitor
 {
@@ -30,7 +31,7 @@ class ScheduleMonitor
    * @param  array  $config
    * @return void
    */
-  public function __construct(array $config, ?Http\Client $client = null)
+  public function __construct(array $config, ?Client $client = null)
   {
     $this->config = $config;
     $this->client = $client ?: app('schedule-monitor.http-client');
@@ -51,6 +52,8 @@ class ScheduleMonitor
     }
 
     $jobName = ScheduleMonitorHelper::getEventName($event);
+    $monitorId = ScheduleMonitorHelper::getEventMonitorId($event);
+    $runId = (string) Str::uuid();
 
     // If it's an artisan command, clean it up
     if (ScheduleMonitorHelper::isArtisanCommand($jobName)) {
@@ -60,7 +63,7 @@ class ScheduleMonitor
     // Dispatch a job to send the heartbeat asynchronously
     // This ensures that heartbeat sending failures don't affect the original job
     if (isset($this->config['use_queue']) && $this->config['use_queue']) {
-      dispatch(new SendHeartbeatJob($jobName, $status, $runtime))
+      dispatch(new SendHeartbeatJob($jobName, $monitorId, $runId, $status, $runtime))
         ->onQueue($this->config['heartbeat_queue'] ?? 'default');
       return true;
     }
@@ -69,12 +72,14 @@ class ScheduleMonitor
     try {
       $response = $this->client->sendHeartbeat([
         'job' => $jobName,
+        'monitorId' => $monitorId,
+        'runId' => $runId,
         'status' => $status,
         'runtime' => $runtime,
       ]);
 
       return $response->successful();
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       report($e);
 
       return false;
@@ -99,7 +104,7 @@ class ScheduleMonitor
           return false;
         }
       }
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       // If we can't check, assume it should be monitored
     }
 
@@ -159,11 +164,18 @@ class ScheduleMonitor
    * @param  float|null  $runtime
    * @return bool
    */
-  public function testHeartbeat(string $jobName, string $status = 'success', ?float $runtime = null): bool
+  public function testHeartbeat(
+    string $jobName,
+    string $status = 'success',
+    ?float $runtime = null,
+    ?string $monitorId = null
+  ): bool
   {
     try {
       $response = $this->client->sendHeartbeat([
         'job' => $jobName,
+        'monitorId' => $monitorId,
+        'runId' => (string) Str::uuid(),
         'status' => $status,
         'runtime' => $runtime,
       ]);

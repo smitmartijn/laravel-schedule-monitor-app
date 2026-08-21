@@ -68,6 +68,26 @@ class ScheduleMonitorServiceProvider extends ServiceProvider
       return $this;
     });
 
+    Event::macro('graceMinutes', function (int $minutes) {
+      if ($minutes < 0 || $minutes > 10080) {
+        throw new \InvalidArgumentException('Grace minutes must be between 0 and 10080.');
+      }
+
+      $this->graceMinutes = $minutes;
+
+      return $this;
+    });
+
+    Event::macro('monitorId', function (string $id) {
+      if ($id === '' || strlen($id) > 255) {
+        throw new \InvalidArgumentException('Monitor ID must contain 1 to 255 characters.');
+      }
+
+      $this->scheduleMonitorId = $id;
+
+      return $this;
+    });
+
     // Initialize custom property on all scheduler events
     $this->app->resolving(Schedule::class, function ($schedule) {
       $events = $schedule->events();

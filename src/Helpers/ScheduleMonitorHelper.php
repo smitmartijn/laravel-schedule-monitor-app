@@ -4,6 +4,7 @@ namespace Smitmartijn\ScheduleMonitor\Helpers;
 
 use Illuminate\Console\Scheduling\Event;
 use ReflectionClass;
+use ReflectionFunction;
 
 class ScheduleMonitorHelper
 {
@@ -107,7 +108,7 @@ class ScheduleMonitorHelper
         $descProperty->setAccessible(true);
         $description = $descProperty->getValue($event);
 
-        if ($description && is_string($description) && class_exists($description)) {
+        if ($description && is_string($description)) {
           return $description;
         }
       }
@@ -115,7 +116,65 @@ class ScheduleMonitorHelper
       // If reflection fails, fall back to generic name
     }
 
-    // Otherwise, use a generic name with a unique identifier
-    return 'scheduled-closure-' . spl_object_hash($event);
+    try {
+      $reflection = new ReflectionClass($event);
+      if ($reflection->hasProperty('callback')) {
+        $property = $reflection->getProperty('callback');
+        $property->setAccessible(true);
+        $callback = $property->getValue($event);
+
+        if ($callback instanceof \Closure) {
+          $closure = new ReflectionFunction($callback);
+
+          return sprintf(
+            'scheduled-closure-%s:%d',
+            basename((string) $closure->getFileName()),
+            $closure->getStartLine()
+          );
+        }
+      }
+    } catch (\Throwable $e) {
+      // Fall through to a deterministic summary.
+    }
+
+    return 'scheduled-event-' . hash('sha256', get_class($event) . '|' . $event->expression);
+  }
+
+  /**
+   * Get the stable identifier used to correlate syncs and heartbeats.
+   */
+  static public function getEventMonitorId(Event $event): string
+  {
+    try {
+      $reflection = new ReflectionClass($event);
+      if ($reflection->hasProperty('scheduleMonitorId')) {
+        $property = $reflection->getProperty('scheduleMonitorId');
+        $property->setAccessible(true);
+        $id = $property->getValue($event);
+
+        if (is_string($id) && $id !== '') {
+          return $id;
+        }
+      }
+    } catch (\Throwable $e) {
+      // Use the derived identifier below.
+    }
+
+    $name = self::getEventName($event);
+    if (self::isArtisanCommand($name)) {
+      $name = self::cleanArtisanCommand($name);
+    }
+
+    return hash('sha256', $name . '|' . $event->expression);
+  }
+
+  /**
+   * Resolve the timezone Laravel uses to evaluate this event.
+   */
+  static public function getEventTimezone(Event $event): string
+  {
+    $timezone = $event->timezone ?? config('app.timezone', 'UTC');
+
+    return $timezone instanceof \DateTimeZone ? $timezone->getName() : (string) $timezone;
   }
 }

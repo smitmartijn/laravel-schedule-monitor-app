@@ -14,6 +14,7 @@ class TestHeartbeatCommand extends Command
    */
   protected $signature = 'schedule:monitor:test-heartbeat
                             {job : The name of the job to test}
+                            {--monitor-id= : Stable monitor ID when job names are ambiguous}
                             {--status=success : The status of the job (success or failure)}
                             {--runtime=0.1 : The runtime of the job in seconds}';
 
@@ -40,7 +41,12 @@ class TestHeartbeatCommand extends Command
     $this->line("Runtime: {$runtime} seconds");
 
     try {
-      $result = ScheduleMonitor::testHeartbeat($jobName, $status, $runtime);
+      $result = ScheduleMonitor::testHeartbeat(
+        $jobName,
+        $status,
+        $runtime,
+        $this->option('monitor-id') ?: null
+      );
 
       if ($result) {
         $this->info('Heartbeat sent successfully!');
